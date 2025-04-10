@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"fmt"
 	"io"
 	"net/http"
@@ -33,19 +34,20 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 
 	// TODO: implement the upload here
 	const maxMemory = 10 << 20
+	fmt.Println(maxMemory)
 	err = r.ParseMultipartForm(maxMemory)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Multipart parsing error", err)
 		return
 	}
 
-	_, fileHeader, err := r.FormFile("thumbnail")
+	file, fileHeader, err := r.FormFile("thumbnail")
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Error while geting image data from form", err)
 		return
 	}
 	mediaType := fileHeader.Header.Get("Content-Type")
-	imageData, err := io.ReadAll(r.Body)
+	imageData, err := io.ReadAll(file)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Error while reading data", err)
 		return
@@ -60,9 +62,14 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 		mediaType: mediaType,
 	}
 
-	videoThumbnails[videoID] = thumbnail
-	url := fmt.Sprintf("http://localhost:%v/api/thumbnails/%s", 8091, videoIDString)
-	dbVideo.ThumbnailURL = &url
+	thumbnail_dataurl := "data:" + thumbnail.mediaType + ";base64,"
+	thumbnail_dataurl = thumbnail_dataurl + base64.StdEncoding.EncodeToString(thumbnail.data)
+
+	fmt.Println(thumbnail_dataurl)
+	// videoThumbnails[videoID] = thumbnail
+	// url := fmt.Sprintf("http://localhost:%v/api/thumbnails/%s", 8091, videoIDString)
+	// dbVideo.ThumbnailURL = &url
+	dbVideo.ThumbnailURL = &thumbnail_dataurl
 	err = cfg.db.UpdateVideo(dbVideo)
 	if err != nil {
 		respondWithError(w, http.StatusUnauthorized, "Error updating video metadata", err)
