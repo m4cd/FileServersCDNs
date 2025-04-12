@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -36,7 +37,7 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 
 	// TODO: implement the upload here
 	const maxMemory = 10 << 20
-	// fmt.Println(maxMemory)
+
 	err = r.ParseMultipartForm(maxMemory)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Multipart parsing error", err)
@@ -48,11 +49,20 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 		respondWithError(w, http.StatusInternalServerError, "Error while geting image data from form", err)
 		return
 	}
-	mediaType := fileHeader.Header.Get("Content-Type")
+	mediaType, _, err := mime.ParseMediaType(fileHeader.Header.Get("Content-Type"))
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Error while parsing mediatype", err)
+		return
+	}
+	if mediaType != "image/jpeg" && mediaType != "image/png" {
+		respondWithError(w, http.StatusInternalServerError, "Error while parsing mediatype", err)
+		return
+	}
+
 	extension := strings.Split(mediaType, "/")[1]
 	filenameOS := videoIDString + "." + extension
 	filePath := filepath.Join(cfg.assetsRoot, filenameOS)
-	// fmt.Printf("filepath: %v", filePath)
+	
 	fileOnFS, err := os.Create(filePath)
 
 	if err != nil {
@@ -62,31 +72,15 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 
 	io.Copy(fileOnFS, file)
 
-	// imageData, err := io.ReadAll(file)
-	// if err != nil {
-	// 	respondWithError(w, http.StatusInternalServerError, "Error while reading data", err)
-	// 	return
-	// }
 	dbVideo, err := cfg.db.GetVideo(videoID)
 	if err != nil {
 		respondWithError(w, http.StatusUnauthorized, "Unauthorized access to th e video", err)
 		return
 	}
-	// thumbnail := thumbnail{
-	// 	data:      imageData,
-	// 	mediaType: mediaType,
-	// }
-
-	//thumbnail_dataurl := "data:" + thumbnail.mediaType + ";base64,"
-	//thumbnail_dataurl = thumbnail_dataurl + base64.StdEncoding.EncodeToString(thumbnail.data)
 
 	thumbnail_dataurl := fmt.Sprintf("http://localhost:%v/assets/%v", 8091, filenameOS)
 	fmt.Printf("thumbnail_url: %v", thumbnail_dataurl)
 
-	// fmt.Println(thumbnail_dataurl)
-	// videoThumbnails[videoID] = thumbnail
-	// url := fmt.Sprintf("http://localhost:%v/api/thumbnails/%s", 8091, videoIDString)
-	// dbVideo.ThumbnailURL = &url
 	dbVideo.ThumbnailURL = &thumbnail_dataurl
 	err = cfg.db.UpdateVideo(dbVideo)
 	if err != nil {
