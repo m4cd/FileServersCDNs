@@ -62,7 +62,7 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 	extension := strings.Split(mediaType, "/")[1]
 	filenameOS := videoIDString + "." + extension
 	filePath := filepath.Join(cfg.assetsRoot, filenameOS)
-	
+
 	fileOnFS, err := os.Create(filePath)
 
 	if err != nil {
@@ -79,7 +79,7 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 	}
 
 	thumbnail_dataurl := fmt.Sprintf("http://localhost:%v/assets/%v", 8091, filenameOS)
-	fmt.Printf("thumbnail_url: %v", thumbnail_dataurl)
+	//fmt.Printf("thumbnail_url: %v", thumbnail_dataurl)
 
 	dbVideo.ThumbnailURL = &thumbnail_dataurl
 	err = cfg.db.UpdateVideo(dbVideo)
