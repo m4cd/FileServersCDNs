@@ -23,10 +23,10 @@ type apiConfig struct {
 	port             string
 }
 
-type thumbnail struct {
-	data      []byte
-	mediaType string
-}
+// type thumbnail struct {
+// 	data      []byte
+// 	mediaType string
+// }
 
 // var videoThumbnails = map[uuid.UUID]thumbnail{}
 
