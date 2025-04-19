@@ -34,6 +34,21 @@ type apiConfig struct {
 
 // var videoThumbnails = map[uuid.UUID]thumbnail{}
 
+var aspectRatioToPrefix = map[string]string{
+	"16:9": "landscape/",
+	"9:16": "portrait/",
+	"other": "other/",
+}
+
+type FFProbeResult struct {
+	Streams []Stream `json:"streams"`
+}
+
+type Stream struct {
+	Width  int `json:"width"`
+	Height int `json:"height"`
+}
+
 func main() {
 	godotenv.Load(".env")
 
